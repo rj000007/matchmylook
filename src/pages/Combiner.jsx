@@ -1,5 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
+/**
+ * Example product list.
+ * Each product has: id, name, price, image, category
+ */
 const products = [
   {
     id: 1,
@@ -27,126 +31,198 @@ const products = [
   },
 ];
 
-function Combiner() {
-  // store selected items as array of product ids (keeps it simple and avoids duplicate full objects)
-  const [selectedItems, setSelectedItems] = useState([]);
+const STORAGE_KEY = "matchmylook:selected";
 
-  // toggle select / unselect
-  const toggleSelect = (item) => {
-    setSelectedItems((prev) => {
-      // if already selected -> remove
-      if (prev.includes(item.id)) return prev.filter((id) => id !== item.id);
-      // otherwise add
-      return [...prev, item.id];
+function Combiner() {
+  // selectedByCategory: { top: productId, bottom: productId, accessory: productId }
+  const [selectedByCategory, setSelectedByCategory] = useState({});
+
+  // load saved selection from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        setSelectedByCategory(JSON.parse(raw));
+      }
+    } catch (e) {
+      console.warn("Failed to read localStorage:", e);
+    }
+  }, []);
+
+  // save whenever selectedByCategory changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedByCategory));
+    } catch (e) {
+      console.warn("Failed to write localStorage:", e);
+    }
+  }, [selectedByCategory]);
+
+  // Select: Enforce one-per-category. Selecting item will replace any previously selected item of same category.
+  const selectItem = (item) => {
+    setSelectedByCategory((prev) => {
+      // if same item clicked and is already selected -> remove it (toggle off)
+      if (prev[item.category] === item.id) {
+        const copy = { ...prev };
+        delete copy[item.category];
+        return copy;
+      }
+      // otherwise set that category to this item id
+      return { ...prev, [item.category]: item.id };
     });
   };
 
-  // remove by id (same as toggling, but explicit)
-  const removeItem = (id) => {
-    setSelectedItems((prev) => prev.filter((pid) => pid !== id));
+  // Remove by category (e.g. remove the chosen top)
+  const removeCategory = (category) => {
+    setSelectedByCategory((prev) => {
+      const copy = { ...prev };
+      delete copy[category];
+      return copy;
+    });
   };
 
-  // get full product objects for rendering the "Selected" area
-  const selectedProducts = selectedItems
+  // Clear all
+  const clearAll = () => setSelectedByCategory({});
+
+  // Build selectedProducts array (full objects)
+  const selectedProducts = Object.values(selectedByCategory)
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean);
 
   const totalPrice = selectedProducts.reduce((s, p) => s + (p?.price || 0), 0);
 
   return (
-    <div style={{ padding: "22px", fontFamily: "system-ui, Arial" }}>
-      <h1>Combiner — Create Your Look</h1>
-
-      {/* Products grid */}
-      <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginTop: 8 }}>
-        {products.map((item) => {
-          const isSelected = selectedItems.includes(item.id);
-          return (
-            <div
-              key={item.id}
-              style={{
-                width: 180,
-                padding: 12,
-                border: "1px solid #eee",
-                borderRadius: 10,
-                boxShadow: isSelected ? "0 4px 14px rgba(99,102,241,0.12)" : undefined,
-              }}
-            >
-              <img
-                src={item.image}
-                alt={item.name}
-                style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 8 }}
-              />
-              <p style={{ margin: "8px 0 4px", fontWeight: 700 }}>{item.name}</p>
-              <p style={{ margin: "0 0 8px" }}>₹{item.price}</p>
-
-              <button
-                onClick={() => toggleSelect(item)}
-                style={{
-                  padding: "6px 10px",
-                  cursor: "pointer",
-                  borderRadius: 6,
-                  border: "1px solid #666",
-                  background: isSelected ? "#6366f1" : "#fff",
-                  color: isSelected ? "#fff" : "#000",
-                }}
-              >
-                {isSelected ? "Selected ✓ (click to remove)" : "Select"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Selected area */}
-      <div style={{ marginTop: 36 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2>Selected ({selectedProducts.length})</h2>
+    <div style={{ padding: 22, fontFamily: "system-ui, Arial" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>Combiner — Create Your Look</h1>
+        <div style={{ textAlign: "right" }}>
           <div style={{ fontWeight: 700 }}>Total: ₹{totalPrice}</div>
-        </div>
-
-        {selectedProducts.length === 0 && <p>No items selected yet. Click “Select” to add.</p>}
-
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 10 }}>
-          {selectedProducts.map((item) => (
-            <div
-              key={item.id}
+          <div style={{ marginTop: 6 }}>
+            <button
+              onClick={clearAll}
               style={{
-                width: 150,
-                padding: 10,
-                borderRadius: 8,
-                border: "1px solid #eee",
-                position: "relative",
+                padding: "6px 10px",
+                borderRadius: 6,
+                border: "1px solid #ddd",
+                cursor: "pointer",
+                background: "#fff",
               }}
             >
-              <img
-                src={item.image}
-                alt={item.name}
-                style={{ width: "100%", height: 100, objectFit: "cover", borderRadius: 6 }}
-              />
-              <p style={{ margin: "8px 0 4px", fontWeight: 600 }}>{item.name}</p>
-              <p style={{ margin: 0 }}>₹{item.price}</p>
-
-              <button
-                onClick={() => removeItem(item.id)}
-                style={{
-                  position: "absolute",
-                  top: 8,
-                  right: 8,
-                  background: "#fff",
-                  border: "1px solid #ddd",
-                  borderRadius: 6,
-                  padding: "4px 6px",
-                  cursor: "pointer",
-                }}
-                aria-label={`Remove ${item.name}`}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
+              Clear All
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
+
+      <section style={{ marginTop: 20 }}>
+        {/* Products */}
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          {products.map((item) => {
+            const isSelected = selectedByCategory[item.category] === item.id;
+            return (
+              <div
+                key={item.id}
+                style={{
+                  width: 200,
+                  border: "1px solid #eee",
+                  borderRadius: 10,
+                  padding: 12,
+                  boxShadow: isSelected ? "0 6px 20px rgba(99,102,241,0.12)" : undefined,
+                }}
+              >
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  style={{ width: "100%", height: 130, objectFit: "cover", borderRadius: 8 }}
+                />
+                <div style={{ marginTop: 10 }}>
+                  <strong>{item.name}</strong>
+                </div>
+                <div style={{ marginTop: 6 }}>₹{item.price}</div>
+                <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => selectItem(item)}
+                    style={{
+                      flex: 1,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: isSelected ? "none" : "1px solid #666",
+                      background: isSelected ? "#6366f1" : "#fff",
+                      color: isSelected ? "#fff" : "#000",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {isSelected ? "Selected ✓" : `Select ${item.category}`}
+                  </button>
+                  {/* quick remove when selected */}
+                  {isSelected && (
+                    <button
+                      onClick={() => removeCategory(item.category)}
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #ddd",
+                        background: "#fff",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section style={{ marginTop: 34 }}>
+        <h2>Selected</h2>
+        {selectedProducts.length === 0 ? (
+          <p>No items selected yet. Choose one per category (top, bottom, accessory).</p>
+        ) : (
+          <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+            {selectedProducts.map((p) => (
+              <div
+                key={p.id}
+                style={{
+                  width: 220,
+                  border: "1px solid #eee",
+                  borderRadius: 10,
+                  padding: 12,
+                  position: "relative",
+                }}
+              >
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 8 }}
+                />
+                <div style={{ marginTop: 8, fontWeight: 700 }}>{p.name}</div>
+                <div style={{ marginTop: 6 }}>₹{p.price}</div>
+                <div style={{ marginTop: 8, color: "#555" }}>{p.category}</div>
+
+                <button
+                  onClick={() => removeCategory(p.category)}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    padding: "6px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #ddd",
+                    background: "#fff",
+                    cursor: "pointer",
+                  }}
+                  aria-label={`Remove ${p.name}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
