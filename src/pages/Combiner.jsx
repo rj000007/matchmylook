@@ -1,41 +1,33 @@
 import React, { useState } from "react";
+import products from "../data/products";
 import ProductCard from "../components/ProductCard";
-import SelectedPanel from "../components/SelectedPanel";
-
-const SAMPLE_PRODUCTS = [
-  { id: "p1", title: "White T-Shirt", price: 12, img: "" },
-  { id: "p2", title: "Blue Jeans", price: 28, img: "" },
-  { id: "p3", title: "Sneakers", price: 45, img: "" },
-  { id: "p4", title: "Cap", price: 8, img: "" },
-];
 
 export default function Combiner() {
   const [selected, setSelected] = useState([]);
 
-  const addItem = (product) => {
-    if (selected.find((s) => s.id === product.id)) return;
-    setSelected((s) => [...s, product]);
-  };
-
-  const removeItem = (id) => setSelected((s) => s.filter((x) => x.id !== id));
-  const clearAll = () => setSelected([]);
+  function onSelect(item) {
+    // toggle selection
+    setSelected(prev => (prev.find(p => p.id === item.id) ? prev.filter(p => p.id !== item.id) : [...prev, item]));
+  }
 
   return (
-    <div className="combiner-page page-container">
-      <div className="combiner-grid">
-        <section className="products">
-          <h2>Products</h2>
-          <div className="product-list">
-            {SAMPLE_PRODUCTS.map((p) => (
-              <ProductCard key={p.id} product={p} onAdd={() => addItem(p)} />
-            ))}
-          </div>
-        </section>
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-4">Combiner — Create Your Look</h1>
 
-        <aside className="selected">
-          <SelectedPanel items={selected} onRemove={removeItem} onClear={clearAll} />
-        </aside>
-      </div>
+      <section className="grid md:grid-cols-3 gap-4">
+        {products.map(item => (
+          <ProductCard key={item.id} item={item} onSelect={onSelect} />
+        ))}
+      </section>
+
+      <aside className="mt-6">
+        <h2 className="text-xl font-semibold">Selected</h2>
+        <ul>
+          {selected.map(s => (
+            <li key={s.id}>{s.name} — ₹{s.price}</li>
+          ))}
+        </ul>
+      </aside>
     </div>
   );
 }
