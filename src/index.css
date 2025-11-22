@@ -1,6 +1,40 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+:root {
+  --accent: #6b46c1;
+  --muted: #6b7280;
+  --bg: #ffffff;
+  --card: #f8fafc;
+}
 
-/* small custom */
-body { @apply bg-gray-50 text-gray-800; }
+body{
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  margin:0;
+  background: var(--bg);
+  color: #111827;
+}
+
+.site-header { background: #fff; border-bottom:1px solid #eee; }
+.site-header .container { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; }
+.logo { font-weight:700; color:var(--accent); text-decoration:none; }
+.site-header nav a { margin-left:12px; text-decoration:none; color:var(--muted); }
+
+.page-container { padding:24px; max-width:1100px; margin:0 auto; }
+
+.combiner-grid { display:grid; grid-template-columns: 1fr 320px; gap:20px; align-items:start; }
+.products { background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.03); }
+.product-list { display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:12px; }
+
+.product-card { background:var(--card); padding:12px; border-radius:8px; display:flex; flex-direction:column; align-items:stretch; }
+.product-img { height:100px; display:flex; align-items:center; justify-content:center; background:#fff; border-radius:6px; margin-bottom:8px; }
+.placeholder { color:var(--muted) }
+.product-body h3 { font-size:14px; margin:0 0 6px; }
+.price { color:var(--muted); margin-bottom:8px; }
+.btn { background:var(--accent); color:#fff; border:0; padding:8px 10px; border-radius:6px; cursor:pointer; }
+
+.selected { position:sticky; top:20px; }
+.selected-panel { background:#fff; padding:12px; border-radius:8px; box-shadow:0 1px 6px rgba(0,0,0,0.04); }
+.selected-list { list-style:none; padding:0; margin:0; }
+.selected-item { display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px dashed #eee; align-items:center; }
+.small { background:#eee; border:0; padding:6px 8px; cursor:pointer; border-radius:6px; }
+
+.selected-footer { margin-top:12px; display:flex; justify-content:space-between; align-items:center; }
+.actions button { margin-left:8px; }
